@@ -17,3 +17,6 @@ transpose' :: [[a]] -> [[a]]
 transpose' [] = []
 transpose' ([] : _) = []
 transpose' matrix = map head matrix : transpose' (map tail matrix)
+
+multMatrixPro :: [[Double]] -> [Double] -> [Double]
+multMatrixPro matriz v = map (\linha -> sum (zipWith (*) linha v)) matriz
