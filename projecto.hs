@@ -59,3 +59,8 @@ buildNetwork entradasIniciais tamanhosCamadas pesosIniciais =
         (_, _, redeFinal) = foldl motor (entradasIniciais, pesosIniciais, []) tamanhosCamadas
     in
         redeFinal
+
+outputError :: [Double] -> [Double] -> [Double]
+outputError [] [] = []
+outputError (x:xs) (y:ys) = (x - y) : outputError xs ys
+outputError _ _ = []
