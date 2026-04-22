@@ -81,3 +81,37 @@ msePredictions lotePrevisoes loteAlvos =
         qtdTestes = fromIntegral (length loteAlvos)
     in 
         sum listaDeResultados / qtdTestes
+        
+forwardPass :: [Double] -> Network -> [[Double]]
+forwardPass input rede = scanl calcularCamada input rede
+   where 
+     calcularCamada :: [Double] -> Layer -> [Double]
+     calcularCamada x (w,b) =
+       let 
+         wx = multMatrix w x
+         wxb = somaVectorial wx b
+        in
+         map sigmoid wxb
+         
+backPropagation :: Double -> [Double] -> [Double] -> Network -> Network
+backPropagation taxa input esperado rede =
+   let
+        ativacoes = forwardPass input rede
+        previsao = last ativacoes
+        deltaSaida = outputError previsao esperado
+        entradasCamada = init ativacoes
+        redeInvertida = reverse rede
+        entradasInvertidas = reverse entradasCamada
+     
+        retroceder :: [Double] -> Network -> [[Double]] -> Network
+        retroceder _ [] [] = []
+        retroceder delta ((w,b) : restoRede) (a_ant:restoEntrada) =
+            let
+         w_novo = zipWith (\w_i d_i -> zipWith (\w_ij a_j -> w_ij - taxa * d_i * a_j) w_i a_ant) w delta
+         b_novo = zipWith (\b_i d_i -> b_i - taxa * d_i) b delta
+         somaErros = multMatrix (transpose w) delta
+         delta_ant = zipWith (*) somaErros (map sigmoid' a_ant)
+   
+            in (w_novo, b_novo) : retroceder delta_ant restoRede restoEntrada
+ 
+    in reverse (retroceder deltaSaida redeInvertida entradasInvertidas)
