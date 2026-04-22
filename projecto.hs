@@ -64,3 +64,20 @@ outputError :: [Double] -> [Double] -> [Double]
 outputError [] [] = []
 outputError (x:xs) (y:ys) = (x - y) : outputError xs ys
 outputError _ _ = []
+
+mse :: [Double] -> [Double] -> Double
+mse previsoes alvos = 
+    let 
+        erros = zipWith (-) previsoes alvos
+        quadrados = map (^2) erros
+        n = fromIntegral (length alvos)
+    in 
+        sum quadrados / n
+
+msePredictions :: [[Double]] -> [[Double]] -> Double
+msePredictions lotePrevisoes loteAlvos = 
+    let 
+        listaDeResultados = zipWith mse lotePrevisoes loteAlvos
+        qtdTestes = fromIntegral (length loteAlvos)
+    in 
+        sum listaDeResultados / qtdTestes
