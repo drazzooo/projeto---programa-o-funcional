@@ -30,3 +30,32 @@ transpose matrix = map head matrix : transpose (map tail matrix)
 -- Exemplo : multMatrix [[2.0, 3.0], [1.0, 2.0], [8.0, 9.0]] [4.0, 8.0] == [32.0, 20.0, 104.0]
 multMatrix :: [[Double]] -> [Double] -> [Double]
 multMatrix matriz v = map (\linha -> sum (zipWith (*) linha v)) matriz
+
+type Vector = [Double]
+type Matrix = [Vector]
+type Layer = (Matrix, Vector)
+type Network = [Layer]
+
+cortaMatriz :: Int -> [a] -> [[a]]
+cortaMatriz _ [] = []
+cortaMatriz n xs = take n xs : cortaMatriz n (drop n xs)
+
+buildNetwork :: Int -> [Int] -> [Double] -> Network
+buildNetwork entradasIniciais tamanhosCamadas pesosIniciais =
+    let
+        motor :: (Int, [Double], Network) -> Int -> (Int, [Double], Network)
+        motor (entradas, valores, redeAcumulada) neuronios =
+            let
+                (pesosDaMatriz, resto1) = splitAt (neuronios * entradas) valores
+                
+                (bias, resto2) = splitAt neuronios resto1
+                
+                matriz = map (\i -> take entradas (drop (i * entradas) pesosDaMatriz)) [0 .. neuronios - 1]
+                
+                camadaAtual = (matriz, bias)
+            in
+                (neuronios, resto2, redeAcumulada ++ [camadaAtual])
+
+        (_, _, redeFinal) = foldl motor (entradasIniciais, pesosIniciais, []) tamanhosCamadas
+    in
+        redeFinal
