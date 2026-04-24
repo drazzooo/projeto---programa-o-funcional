@@ -82,6 +82,7 @@ msePredictions lotePrevisoes loteAlvos =
     in 
         sum listaDeResultados / qtdTestes
         
+-- Exemplo: length (forwardPass [0,1] (buildNetwork 2 [2,1] (repeat 0.5))) == 3
 forwardPass :: [Double] -> Network -> [[Double]]
 forwardPass input rede = scanl calcularCamada input rede
    where 
@@ -93,6 +94,7 @@ forwardPass input rede = scanl calcularCamada input rede
         in
          map sigmoid wxb
          
+-- Exemplo: backPropagation 0.5 [1,0] [1] (buildNetwork 2 [2,1] (repeat 0.5))
 backPropagation :: Double -> [Double] -> [Double] -> Network -> Network
 backPropagation taxa input esperado rede =
    let
@@ -115,3 +117,5 @@ backPropagation taxa input esperado rede =
             in (w_novo, b_novo) : retroceder delta_ant restoRede restoEntrada
  
     in reverse (retroceder deltaSaida redeInvertida entradasInvertidas)
+     
+     
