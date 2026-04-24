@@ -36,52 +36,38 @@ type Matrix = [Vector]
 type Layer = (Matrix, Vector)
 type Network = [Layer]
 
-cortaMatriz :: Int -> [a] -> [[a]]
-cortaMatriz _ [] = []
-cortaMatriz n xs = take n xs : cortaMatriz n (drop n xs)
-
+-- Exemplo: buildNetwork 2 [2] [0.1, 0.2, 0.3, 0.4, 0.5, 0.6] == [([[0.1, 0.2], [0.3, 0.4]] , [0.5, 0.6])]
 buildNetwork :: Int -> [Int] -> [Double] -> Network
-buildNetwork entradasIniciais tamanhosCamadas pesosIniciais =
+buildNetwork numInputs layerSizes weights =
     let
-        motor :: (Int, [Double], Network) -> Int -> (Int, [Double], Network)
-        motor (entradas, valores, redeAcumulada) neuronios =
+        buildLayer :: (Int, [Double], Network) -> Int -> (Int, [Double], Network)
+        buildLayer (inputs, currentWeights, net) neurons =
             let
-                (pesosDaMatriz, resto1) = splitAt (neuronios * entradas) valores
+                (matrixWeights, rest1) = splitAt (neurons * inputs) currentWeights
                 
-                (bias, resto2) = splitAt neuronios resto1
+                (bias, rest2) = splitAt neurons rest1
                 
-                matriz = map (\i -> take entradas (drop (i * entradas) pesosDaMatriz)) [0 .. neuronios - 1]
+                matrix = chunksOf inputs matrixWeights
                 
-                camadaAtual = (matriz, bias)
+                currentLayer = (matrix, bias)
             in
-                (neuronios, resto2, redeAcumulada ++ [camadaAtual])
+                (neurons, rest2, net ++ [currentLayer])
 
-        (_, _, redeFinal) = foldl motor (entradasIniciais, pesosIniciais, []) tamanhosCamadas
+        (_, _, finalNetwork) = foldl buildLayer (numInputs, weights, []) layerSizes
     in
-        redeFinal
-
+        finalNetwork
+-- Exemplo:  outputError [0.9, 0.2] [1.0, 0.0] == [-0.1, 0.2]
 outputError :: [Double] -> [Double] -> [Double]
-outputError [] [] = []
-outputError (x:xs) (y:ys) = (x - y) : outputError xs ys
-outputError _ _ = []
+outputError predictions target = zipWith (-) predictions target
 
+-- Exemplo: mse [0.9, 0.2] [1.0, 0.0] == 0.025
 mse :: [Double] -> [Double] -> Double
-mse previsoes alvos = 
-    let 
-        erros = zipWith (-) previsoes alvos
-        quadrados = map (^2) erros
-        n = fromIntegral (length alvos)
-    in 
-        sum quadrados / n
+mse predictions targets = sum (map (^2) (zipWith (-) predictions targets)) / fromIntegral (length targets)
 
+--Exemplo: msePredictions [[0.9], [0.1]] [[1.0], [0.0]] == 0.01
 msePredictions :: [[Double]] -> [[Double]] -> Double
-msePredictions lotePrevisoes loteAlvos = 
-    let 
-        listaDeResultados = zipWith mse lotePrevisoes loteAlvos
-        qtdTestes = fromIntegral (length loteAlvos)
-    in 
-        sum listaDeResultados / qtdTestes
-        
+msePredictions setPredictions setTargets = sum (zipWith mse setPredictions setTargets) / fromIntegral (length setTargets)
+
 -- Exemplo: length (forwardPass [0,1] (buildNetwork 2 [2,1] (repeat 0.5))) == 3
 forwardPass :: [Double] -> Network -> [[Double]]
 forwardPass input rede = scanl calcularCamada input rede
@@ -109,13 +95,15 @@ backPropagation taxa input esperado rede =
         retroceder _ [] [] = []
         retroceder delta ((w,b) : restoRede) (a_ant:restoEntrada) =
             let
-         w_novo = zipWith (\w_i d_i -> zipWith (\w_ij a_j -> w_ij - taxa * d_i * a_j) w_i a_ant) w delta
-         b_novo = zipWith (\b_i d_i -> b_i - taxa * d_i) b delta
-         somaErros = multMatrix (transpose w) delta
-         delta_ant = zipWith (*) somaErros (map sigmoid' a_ant)
+                w_novo = zipWith (\w_i d_i -> zipWith (\w_ij a_j -> w_ij - taxa * d_i * a_j) w_i a_ant) w delta
+                b_novo = zipWith (\b_i d_i -> b_i - taxa * d_i) b delta
+                somaErros = multMatrix (transpose w) delta
+                delta_ant = zipWith (*) somaErros (map sigmoid' a_ant)
    
-            in (w_novo, b_novo) : retroceder delta_ant restoRede restoEntrada
+            in 
+                (w_novo, b_novo) : retroceder delta_ant restoRede restoEntrada
  
-    in reverse (retroceder deltaSaida redeInvertida entradasInvertidas)
+    in 
+        reverse (retroceder deltaSaida redeInvertida entradasInvertidas)
      
      
